@@ -1,0 +1,47 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+
+
+## Loading and preprocessing the data
+```{r}
+activity <- read.csv(unzip("activity.zip"))
+str(activity)
+activity_nona <- activity[!is.na(activity$steps),]
+str(activity_nona)
+```
+
+
+## What is mean total number of steps taken per day?
+```{r}
+library(dplyr)
+
+bydate <- group_by(activity_nona, date)
+days <- summarise(bydate, total = sum(steps))
+mean_steps_by_date <- mean(days$total)
+mean_steps_by_date
+```
+
+
+## What is the average daily activity pattern?
+```{r}
+byinterval <- group_by(activity_nona, interval)
+intervals <- summarise(byinterval, total = sum(steps))
+plot(intervals$total,intervals$interval)
+```
+
+
+## Imputing missing values
+
+
+
+## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+byweekday <- group_by(activity_nona, weekdays(as.Date(date)))
+weekdays <- summarise(byweekday, total = sum(steps))
+plot(weekdays$total,weekdays$interval)
+```
+```
