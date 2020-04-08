@@ -8,18 +8,120 @@ output:
 
 ## Loading and preprocessing the data
 
+Need the following libraries. If not installed, install with install.packages().
+
+```{r}
+library(plyr)
+library(dplyr)
+library(chron)
+```
+
+Unzip the file and read the data frame using the default values of read.csv.
+
+```{r}
+activity <- read.csv(unzip("activity.zip"))
+str(activity)
+```
+
+Cast dates.
+
+```{r}
+activity$date <- as.Date(activity$date)
+```
+
+## What is the mean total number of steps taken per day?
+
+Group data by date and summarize by taking the total number of steps by day.
+
+```{r}
 
 
-## What is mean total number of steps taken per day?
+bydate <- group_by(activity, date)
+days <- summarise(bydate, total = sum(steps,na.rm = TRUE))
+mean_steps_by_date <- mean(days$total)
+mean_steps_by_date
+```
+
+The mean of the total number of steps taken per day is `r mean(activity$steps, na.rm = TRUE)`.
+The median of the total number of steps taken per day is `r median(activity$steps, na.rm = TRUE)`.
+
+```{r}
+hist(days$total, xlab = "Total number of steps", main = "Frequency of total number of steps per day")
+```
 
 
 
 ## What is the average daily activity pattern?
 
+Calculate the mean by interval by day and plot the result.
 
+```{r}
+averageStepsByInterval <- tapply(activity$steps, activity$interval, mean, na.rm = TRUE)
+plot(names(averageStepsByInterval), averageStepsByInterval, type = "l", xlab = "5-minute Interval", 
+     ylab = "Average number of steps taken", main = "Average number of steps across 5-minute intervals per day")
+
+maxIntervalValue <- max(averageStepsByInterval,na.rm = TRUE)
+
+```
+
+The 5-minute interval with the maximum average of the total number of steps taken per day,
+`r maxIntervalValue` , is `r names(averageStepsByInterval[which(averageStepsByInterval==maxIntervalValue)])`.
 
 ## Imputing missing values
 
+The total number of missing values is `r sum(is.na(activity$steps))`.
+
+Missing values will be replaced by the mean by interval.
+
+```{r}
+
+impute.mean <- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+data <- ddply(activity, ~ interval, transform, steps = impute.mean(steps))
+
+data <- data[order(data$date), ] #plyr orders by group so we have to reorder
+sum(is.na(data$steps))
+head(data)
+```
+
+Repeat previous steps with augmented modified dataset.
+
+Group data by date and summarize by taking the total number of steps by day.
+
+```{r}
+
+
+bydate <- group_by(data, date)
+days <- summarise(bydate, total = sum(steps))
+mean_steps_by_date <- mean(days$total)
+mean_steps_by_date
+```
+
+The mean of the total number of steps taken per day is `r mean(data$steps, na.rm = TRUE)`.
+The median of the total number of steps taken per day is `r median(data$steps, na.rm = TRUE)`.
+
+Values do not seem to differ from the original values that ignored the NA entries.
+
+```{r}
+hist(days$total, xlab = "Total number of steps", main = "Frequency of total number of steps per day")
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Sumarize steps by type of day (weekday vs weekend) and plot the results.
+
+```{r}
+par(mfrow = c(1, 2))
+
+weekend <- data[which(is.weekend(data$date)),]
+averageWeekend <- tapply(weekend$steps, weekend$interval, mean, na.rm = TRUE)
+plot(names(averageWeekend), averageWeekend, type = "l", xlab = "5-minute Interval", 
+     ylab = "Average number of steps taken", main = "Weekend pattern")
+
+weekdays <- data[which(!is.weekend(data$date)),]
+averageWeekDays<- tapply(weekdays$steps, weekdays$interval, mean, na.rm = TRUE)
+plot(names(averageWeekDays), averageWeekDays, type = "l", xlab = "5-minute Interval", 
+     ylab = "Average number of steps taken", main = "Weekday pattern")
+
+```
+
